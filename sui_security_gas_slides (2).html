@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Move Security & Gas Tuning — Sui Hub Workshop</title>
+    <style>
+        :root {
+            --sui-teal: #4DA2A5;
+            --sui-dark: #1A2E2E;
+            --sui-light: #F8FAFA;
+            --sui-accent: #00A896;
+            --sui-muted: #7A9A9A;
+            --sui-warn: #E74C3C;
+            --sui-code-bg: #F0F5F5;
+            --sui-border: #D0E0E0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #FFFFFF;
+            color: var(--sui-dark);
+            overflow: hidden;
+        }
+        .slides-container {
+            width: 100%; height: 100%;
+            position: relative;
+        }
+        .slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            padding: 60px 80px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            background: #FFFFFF;
+        }
+        .slide.active { display: flex; }
+        .slide-number {
+            position: absolute;
+            bottom: 30px; right: 40px;
+            font-size: 14px;
+            color: var(--sui-muted);
+            font-weight: 500;
+        }
+        h1 {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--sui-accent);
+            margin-bottom: 16px;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+        h2 {
+            font-size: 38px;
+            font-weight: 700;
+            color: var(--sui-teal);
+            margin-bottom: 28px;
+            line-height: 1.2;
+        }
+        h3 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--sui-accent);
+            margin-bottom: 10px;
+            margin-top: 18px;
+        }
+        p, li {
+            font-size: 20px;
+            line-height: 1.6;
+            color: var(--sui-dark);
+            max-width: 900px;
+        }
+        ul { margin-left: 28px; }
+        li { margin-bottom: 10px; }
+        .subtitle {
+            font-size: 24px;
+            color: var(--sui-muted);
+            font-weight: 400;
+        }
+        .meta {
+            margin-top: 30px;
+            font-size: 16px;
+            color: var(--sui-muted);
+        }
+        .highlight {
+            color: var(--sui-accent);
+            font-weight: 600;
+        }
+        .code-block {
+            background: var(--sui-code-bg);
+            border: 1px solid var(--sui-border);
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin: 14px 0;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #1A2E2E;
+            max-width: 900px;
+            width: 100%;
+            overflow-x: auto;
+        }
+        .code-block .comment { color: var(--sui-muted); font-style: italic; }
+        .code-block .keyword { color: #C0392B; font-weight: 600; }
+        .code-block .type { color: #2980B9; }
+        .code-block .string { color: #27AE60; }
+        .code-block .func { color: #8E44AD; }
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 36px;
+            width: 100%;
+            max-width: 1100px;
+        }
+        .card {
+            background: var(--sui-light);
+            border: 1px solid var(--sui-border);
+            border-radius: 12px;
+            padding: 22px;
+        }
+        .card h4 {
+            color: var(--sui-accent);
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        .card p { font-size: 17px; color: #3A5A5A; }
+        .agenda-row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 14px;
+            font-size: 20px;
+        }
+        .agenda-time {
+            background: var(--sui-teal);
+            color: #FFFFFF;
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 16px;
+            min-width: 90px;
+            text-align: center;
+        }
+        .warning {
+            background: rgba(231, 76, 60, 0.08);
+            border-left: 4px solid var(--sui-warn);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 14px 0;
+            max-width: 900px;
+        }
+        .warning strong { color: var(--sui-warn); }
+        .tip {
+            background: rgba(0, 168, 150, 0.08);
+            border-left: 4px solid var(--sui-accent);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 14px 0;
+            max-width: 900px;
+        }
+        .tip strong { color: var(--sui-accent); }
+        .nav-hint {
+            position: absolute;
+            bottom: 30px; left: 40px;
+            font-size: 13px;
+            color: var(--sui-muted);
+        }
+        table {
+            width: 100%;
+            max-width: 900px;
+            border-collapse: collapse;
+            margin: 14px 0;
+            font-size: 17px;
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--sui-border);
+        }
+        th {
+            color: var(--sui-accent);
+            font-weight: 600;
+            background: var(--sui-light);
+        }
+        td { color: #3A5A5A; }
+        .avatar {
+            width: 80px; height: 80px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            border: 2px solid var(--sui-teal);
+        }
+        .label {
+            display: inline-block;
+            background: var(--sui-teal);
+            color: #FFFFFF;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+        .icon-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .icon-row img {
+            width: 64px; height: 64px;
+            border-radius: 10px;
+            border: 2px solid var(--sui-teal);
+        }
+        @media (max-width: 900px) {
+            .slide { padding: 30px; }
+            h1 { font-size: 30px; }
+            h2 { font-size: 24px; }
+            p, li { font-size: 18px; }
+            .two-col { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="slides-container">
+
+<!-- Slide 1: Title -->
+<div class="slide active">
+    <img src="https://api.dicebear.com/7.x/identicon/svg?seed=move-security" class="avatar" alt="Security">
+    <h1>Move Security & Gas Tuning</h1>
+    <p class="subtitle">Sui Hub Workshop — 30 Minutes</p>
+    <p class="meta">Secure Contracts • Testing Practices • Cost Optimization</p>
+    <p class="nav-hint">Use ← → arrow keys or click to navigate</p>
+    <div class="slide-number">1 / 16</div>
+</div>
+
+<!-- Slide 2: Agenda -->
+<div class="slide">
+    <h2>Agenda (30 min)</h2>
+    <div class="agenda-row"><span class="agenda-time">10m</span><span><strong>Move Security</strong> — Common vulnerabilities & defensive patterns</span></div>
+    <div class="agenda-row"><span class="agenda-time">10m</span><span><strong>Sui Move Testing</strong> — Unit tests, scenarios & debugging</span></div>
+    <div class="agenda-row"><span class="agenda-time">7m</span><span><strong>Gas Tuning</strong> — Storage, computation & transaction cost optimization</span></div>
+    <div class="agenda-row"><span class="agenda-time">3m</span><span><strong>Q&A & Resources</strong></span></div>
+    <div class="slide-number">2 / 16</div>
+</div>
+
+<!-- Slide 3: Security Mindset -->
+<div class="slide">
+    <div class="icon-row">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=shield" alt="Shield">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=lock" alt="Lock">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=audit" alt="Audit">
+    </div>
+    <h2>The Security Mindset</h2>
+    <p>Access control vulnerabilities caused <span class="highlight">58% of all losses in 2025</span>. On Sui, every shared or immutable object input must be treated as <strong>attacker-controlled</strong>.</p>
+    <ul style="margin-top:16px;">
+        <li>Ownership checks must be <strong>explicit</strong> — never assume</li>
+        <li>Verify the transaction sender owns any object being acted upon</li>
+        <li>Assert conditions in <strong>both</strong> on-chain and off-chain code</li>
+        <li>Use capability-based access control, not hardcoded addresses</li>
+    </ul>
+    <div class="slide-number">3 / 16</div>
+</div>
+
+<!-- Slide 4: Minimal Abilities -->
+<div class="slide">
+    <h2>Minimal Abilities Principle</h2>
+    <p>Assign the <span class="highlight">minimum</span> abilities required. Excessive abilities create attack surface.</p>
+    <div class="code-block">
+<span class="comment">// BAD: store is unnecessary for events</span>
+<span class="keyword">struct</span> <span class="type">PoolCreated</span> <span class="keyword">has</span> copy, <span class="string">store</span>, drop {
+    pool_id: <span class="type">ID</span>,
+}
+
+<span class="comment">// GOOD: only copy + drop needed</span>
+<span class="keyword">struct</span> <span class="type">PoolCreated</span> <span class="keyword">has</span> copy, drop {
+    pool_id: <span class="type">ID</span>,
+}
+
+<span class="comment">// BAD: Receipt with store + drop breaks flash loan</span>
+<span class="keyword">struct</span> <span class="type">Receipt</span>&lt;<span class="type">T</span>&gt; <span class="keyword">has</span> <span class="string">store, drop</span> { amount: <span class="type">u64</span> }
+
+<span class="comment">// GOOD: Hot potato — NO abilities</span>
+<span class="keyword">struct</span> <span class="type">Receipt</span>&lt;<span class="type">T</span>&gt; { amount: <span class="type">u64</span> }
+    </div>
+    <div class="slide-number">4 / 16</div>
+</div>
+
+<!-- Slide 5: Access Control -->
+<div class="slide">
+    <h2>Access Control Patterns</h2>
+    <div class="two-col">
+        <div class="card">
+            <h4>Capability (Soulbound)</h4>
+            <p><code>key</code> only — cannot be transferred. Bound to owner forever. Best for admin rights.</p>
+        </div>
+        <div class="card">
+            <h4>Capability (Transferable)</h4>
+            <p><code>key, store</code> — can be sold or traded. Use when rights should be marketable.</p>
+        </div>
+    </div>
+    <div class="code-block" style="margin-top:16px;">
+<span class="comment">// Verify ownership before state changes</span>
+<span class="keyword">assert!</span>(object::owner(&obj) == tx_context::sender(ctx), <span class="string">EUnauthorized</span>);
+
+<span class="comment">// Never share AdminCap — transfer to deployer</span>
+transfer::public_transfer(admin_cap, tx_context::sender(ctx));
+    </div>
+    <div class="warning"><strong>Anti-pattern:</strong> Sharing <code>AdminCap</code> via <code>share_object</code> lets anyone call admin functions.</div>
+    <div class="slide-number">5 / 16</div>
+</div>
+
+<!-- Slide 6: Object Ownership -->
+<div class="slide">
+    <h2>Object Ownership & Transfers</h2>
+    <div class="two-col">
+        <div class="card">
+            <h4>Owned by Address</h4>
+            <p>Requires owner signature. Parallel execution. Best for wallets, personal items.</p>
+        </div>
+        <div class="card">
+            <h4>Shared Object</h4>
+            <p>Anyone can access. Needs consensus. Slower, more expensive. Use sparingly.</p>
+        </div>
+    </div>
+    <div class="code-block" style="margin-top:16px;">
+<span class="comment">// Owned — single writer, fast</span>
+transfer::transfer(obj, recipient);
+
+<span class="comment">// Shared — multi-writer, consensus needed</span>
+transfer::share_object(obj);
+
+<span class="comment">// Immutable — no owner, forever</span>
+transfer::freeze_object(obj);
+    </div>
+    <div class="tip"><strong>Rule:</strong> Prefer owned objects. Only share when multiple writers are unavoidable.</div>
+    <div class="slide-number">6 / 16</div>
+</div>
+
+<!-- Slide 7: Common Bugs -->
+<div class="slide">
+    <h2>Common Security Bugs</h2>
+    <table>
+        <tr><th>Vulnerability</th><th>Impact</th><th>Fix</th></tr>
+        <tr><td>Excessive abilities</td><td>Unexpected transfers, drops</td><td>Minimal abilities only</td></tr>
+        <tr><td>Shared AdminCap</td><td>Anyone becomes admin</td><td>Transfer to deployer</td></tr>
+        <tr><td>Unvalidated generics</td><td>Wrong coin type accepted</td><td>Include type in signature</td></tr>
+        <tr><td>Dynamic field collision</td><td>Data overwrite</td><td>Check contains before add</td></tr>
+        <tr><td>ID leak</td><td>Object ID reuse</td><td>Only fresh IDs from object::new</td></tr>
+        <tr><td>Coin metadata unfrozen</td><td>Admin changes token info</td><td>public_freeze_object</td></tr>
+    </table>
+    <div class="slide-number">7 / 16</div>
+</div>
+
+<!-- Slide 8: Generics Pitfall -->
+<div class="slide">
+    <h2>Generics: The Hidden Danger</h2>
+    <p>Public functions with generic <code>&lt;COIN&gt;</code> accept <strong>any</strong> coin type. Without validation, users can pay with worthless tokens.</p>
+    <div class="code-block">
+<span class="comment">// VULNERABLE: Any Coin type accepted</span>
+<span class="keyword">public entry fun</span> <span class="func">buy_pack</span>&lt;<span class="type">COIN</span>&gt;(
+    game: &<span class="keyword">mut</span> <span class="type">Game</span>,
+    paid: <span class="type">Coin</span>&lt;<span class="type">COIN</span>&gt;,
+    signature: <span class="type">vector</span>&lt;<span class="type">u8</span>&gt;,
+    ctx: &<span class="keyword">mut</span> <span class="type">TxContext</span>
+) {
+    <span class="comment">// Signature doesn't include coin type!</span>
+}
+
+<span class="comment">// SECURE: Include coin type in signature verification</span>
+<span class="keyword">let</span> message = <span class="type">PackMessage</span> {
+    coin_type: type_name::get&lt;<span class="type">COIN</span>&gt;(),  <span class="comment">// bind type to signature</span>
+    <span class="comment">// ...</span>
+};
+    </div>
+    <div class="slide-number">8 / 16</div>
+</div>
+
+<!-- Slide 9: Transition to Testing -->
+<div class="slide">
+    <div class="icon-row">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=test" alt="Test">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=check" alt="Check">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=bug" alt="Bug">
+    </div>
+    <h1>Sui Move Testing</h1>
+    <p class="subtitle">Unit tests, scenario testing & debugging your contracts</p>
+    <div class="slide-number">9 / 16</div>
+</div>
+
+<!-- Slide 10: Unit Tests -->
+<div class="slide">
+    <h2>Move Unit Tests</h2>
+    <p>Sui Move has built-in test support. Write tests in the same file or a <code>tests/</code> directory.</p>
+    <div class="code-block">
+<span class="comment">// tests/advance_ptb_tests.move</span>
+<span class="keyword">#[test]</span>
+<span class="keyword">fun</span> <span class="func">test_mint_with_cap</span>() {
+    <span class="keyword">let</span> <span class="keyword">mut</span> ctx = tx_context::dummy();
+    <span class="keyword">let</span> cap = <span class="func">create_admin_cap</span>(&<span class="keyword">mut</span> ctx);
+    <span class="keyword">let</span> collection = <span class="func">create_collection</span>(&<span class="keyword">mut</span> ctx);
+
+    <span class="comment">// Admin mints</span>
+    <span class="keyword">let</span> nft = <span class="func">mint</span>(&cap, &<span class="keyword">mut</span> collection, &<span class="keyword">mut</span> ctx);
+    <span class="func">assert!</span>(nft.id != object::id_from_address(@0x0), <span class="string">0</span>);
+
+    transfer::public_transfer(nft, @0x1);
+    transfer::public_transfer(cap, @0x1);
+    transfer::public_share_object(collection);
+}
+
+<span class="comment">// Run: sui move test</span>
+    </div>
+    <div class="tip"><strong>Best practice:</strong> Test the happy path, failure paths, and edge cases. Use <code>#[expected_failure]</code> for abort tests.</div>
+    <div class="slide-number">10 / 16</div>
+</div>
+
+<!-- Slide 11: Test-Only Helpers -->
+<div class="slide">
+    <h2>Test-Only Functions & Scenarios</h2>
+    <p>Use <code>#[test_only]</code> to expose internal state for testing without polluting your public API.</p>
+    <div class="code-block">
+<span class="comment">// Only available in test mode</span>
+#<span class="func">[test_only]</span>
+<span class="keyword">public fun</span> <span class="func">get_balance_internal</span>(vault: &<span class="type">Vault</span>): <span class="type">u64</span> {
+    vault.balance
+}
+
+#<span class="func">[test_only]</span>
+<span class="keyword">public fun</span> <span class="func">set_balance_for_test</span>(vault: &<span class="keyword">mut</span> <span class="type">Vault</span>, val: <span class="type">u64</span>) {
+    vault.balance = val;
+}
+
+<span class="comment">// Scenario: simulate multiple users</span>
+#<span class="func">[test]</span>
+<span class="keyword">fun</span> <span class="func">test_flash_loan_repay</span>() {
+    <span class="keyword">let</span> <span class="keyword">mut</span> ctx = tx_context::dummy();
+    <span class="keyword">let</span> <span class="keyword">mut</span> pool = <span class="func">create_pool</span>(<span class="string">1000</span>, &<span class="keyword">mut</span> ctx);
+
+    <span class="comment">// Borrow</span>
+    <span class="keyword">let</span> (coin, receipt) = <span class="func">borrow</span>(&<span class="keyword">mut</span> pool, <span class="string">100</span>, &<span class="keyword">mut</span> ctx);
+
+    <span class="comment">// Must repay in same test scope (hot potato)</span>
+    <span class="func">repay</span>(&<span class="keyword">mut</span> pool, coin, receipt);
+
+    <span class="func">assert!</span>(pool.balance == <span class="string">1000</span>, <span class="string">0</span>);
+}
+    </div>
+    <div class="slide-number">11 / 16</div>
+</div>
+
+<!-- Slide 12: Debugging Tips -->
+<div class="slide">
+    <h2>Debugging & Testing Checklist</h2>
+    <div class="two-col">
+        <div class="card">
+            <h4>Unit Test Checklist</h4>
+            <p>• Happy path works<br>• <code>#[expected_failure]</code> on bad inputs<br>• Zero/edge amounts<br>• Unauthorized access blocked<br>• Object ownership verified</p>
+        </div>
+        <div class="card">
+            <h4>Debugging Tools</h4>
+            <p>• <code>sui move test</code> — run all tests<br>• <code>sui move test --gas-limit 1000000</code><br>• <code>std::debug::print(&value)</code> in tests<br>• <code>sui client publish --dry-run</code></p>
+        </div>
+    </div>
+    <div class="code-block" style="margin-top:16px;">
+<span class="comment">// Print debugging in tests</span>
+<span class="keyword">use</span> std::debug;
+
+#<span class="func">[test]</span>
+<span class="keyword">fun</span> <span class="func">test_debug</span>() {
+    <span class="keyword">let</span> val = <span class="string">42</span>;
+    debug::print(&val);  <span class="comment">// outputs in test logs</span>
+}
+    </div>
+    <div class="slide-number">12 / 16</div>
+</div>
+
+<!-- Slide 13: Transition to Gas -->
+<div class="slide">
+    <div class="icon-row">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=gas" alt="Gas">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=bolt" alt="Bolt">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=coin" alt="Coin">
+    </div>
+    <h1>Gas Tuning</h1>
+    <p class="subtitle">Storage, computation & transaction cost optimization on Sui</p>
+    <div class="slide-number">13 / 16</div>
+</div>
+
+<!-- Slide 14: Gas Model -->
+<div class="slide">
+    <h2>Sui Gas Model</h2>
+    <p>Sui gas = <span class="highlight">computation</span> + <span class="highlight">storage</span>. Unlike Ethereum, storage is a <strong>deposit</strong> you get back when deleting objects.</p>
+    <div class="two-col">
+        <div class="card">
+            <h4>Computation Cost</h4>
+            <p>• Bytecode execution<br>• Native function calls<br>• Transaction processing<br><br><span style="color:var(--sui-accent);">Fixed per tx + variable per op</span></p>
+        </div>
+        <div class="card">
+            <h4>Storage Cost</h4>
+            <p>• Object creation<br>• Dynamic field addition<br>• Event emission<br><br><span style="color:var(--sui-accent);">Deposit refunded on deletion</span></p>
+        </div>
+    </div>
+    <div class="slide-number">14 / 16</div>
+</div>
+
+<!-- Slide 15: Optimization Techniques -->
+<div class="slide">
+    <h2>Gas Optimization Techniques</h2>
+    <table>
+        <tr><th>Technique</th><th>Savings</th><th>How</th></tr>
+        <tr><td>Prefer owned objects</td><td>~50-80%</td><td>No consensus overhead vs shared</td></tr>
+        <tr><td>Batch in PTBs</td><td>~30-50%</td><td>One tx fee for 1,024 ops</td></tr>
+        <tr><td>Avoid dynamic fields</td><td>~20%</td><td>Direct wrapping is cheaper</td></tr>
+        <tr><td>Delete unused objects</td><td>Refund</td><td>Get storage deposit back</td></tr>
+        <tr><td>Minimize event data</td><td>~10%</td><td>Only emit essential fields</td></tr>
+        <tr><td>Use entry functions</td><td>~5-10%</td><td>Simpler call graph = less gas</td></tr>
+    </table>
+    <div class="slide-number">15 / 16</div>
+</div>
+
+<!-- Slide 16: Q&A -->
+<div class="slide">
+    <div class="icon-row">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=question" alt="Question">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=help" alt="Help">
+        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=chat" alt="Chat">
+    </div>
+    <h1>Questions?</h1>
+    <p class="subtitle">Move Security & Gas Tuning</p>
+    <p class="meta" style="margin-top:30px;">
+        <span class="label">DOCS</span> docs.sui.io/build/move/security<br><br>
+        <span class="label">COURSE</span> github.com/sui-foundation/sui-move-intro-course<br><br>
+        <span class="label">CLI</span> sui move test | sui client publish --dry-run
+    </p>
+    <p class="meta" style="margin-top:24px;">Thanks for joining — build secure & efficient contracts on Sui!</p>
+    <div class="slide-number">16 / 16</div>
+</div>
+
+</div>
+
+<script>
+    let current = 0;
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+
+    function showSlide(n) {
+        slides.forEach((s, i) => s.classList.toggle('active', i === n));
+    }
+
+    function next() {
+        if (current < total - 1) { current++; showSlide(current); }
+    }
+
+    function prev() {
+        if (current > 0) { current--; showSlide(current); }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') next();
+        if (e.key === 'ArrowLeft') prev();
+    });
+
+    document.addEventListener('click', (e) => {
+        const x = e.clientX;
+        if (x > window.innerWidth / 2) next();
+        else prev();
+    });
+
+    showSlide(0);
+</script>
+
+</body>
+</html>
